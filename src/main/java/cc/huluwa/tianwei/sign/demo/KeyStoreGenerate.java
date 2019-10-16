@@ -45,6 +45,7 @@ public class KeyStoreGenerate {
     /** 签章图片 **/
     private static String SIGN_IMG = "./data/test.png";
 
+    //这里是防止报下面这个异常 java.security.NoSuchProviderException: no such provider: BC
     static {
         Security.addProvider(new BouncyCastleProvider());
     }
@@ -71,7 +72,7 @@ public class KeyStoreGenerate {
         keyStore.load(null,KEYSTORE_PASSWORD.toCharArray());
         CertAndKeyGen keyGen = new CertAndKeyGen("RSA","SHA1WithRSA",null);
         //CN 姓名  OU 组织单位名称 O 组织名称 L xx ST 省市区名称 C 国家
-        X500Name x500Name = new X500Name("聂志良",  "123","456","HangZhou", "ZJ", "CHN");
+        X500Name x500Name = new X500Name("苏大雨",  "123","456","HangZhou", "ZJ", "CHN");
         //设置加密算法长度
         keyGen.generate(2048);
         PrivateKey privateKey = keyGen.getPrivateKey();
@@ -105,8 +106,8 @@ public class KeyStoreGenerate {
         chain [0] = keyGen.getSelfCertificate(x500Name,new Date(),1096 * 24 * 60 *60);
 
         FileOutputStream fileOutputStream = new FileOutputStream(KEYSTORE_PATH);
-        //设置第一张初始化证书
-        keyStore.setKeyEntry("888888",privateKey,"123456".toCharArray(),chain);
+        //设置第二张证书
+        keyStore.setKeyEntry("888888",privateKey,KEYSTORE_PASSWORD.toCharArray(),chain);
         keyStore.store(fileOutputStream,KEYSTORE_PASSWORD.toCharArray());
         fileOutputStream.close();
 
@@ -122,10 +123,10 @@ public class KeyStoreGenerate {
         KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
         keyStore.load(inputStream,KEYSTORE_PASSWORD.toCharArray());
 
+        //证书的私钥
         PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, KEYSTORE_PASSWORD.toCharArray());
         //证书链
         Certificate[] chain = keyStore.getCertificateChain(alias);
-
 
         String digestAlgorithm = DigestAlgorithms.SHA256;
         MakeSignature.CryptoStandard subfilter = MakeSignature.CryptoStandard.CMS;
@@ -133,8 +134,9 @@ public class KeyStoreGenerate {
         // Creating the reader and the stamper
         PdfReader reader = new PdfReader(PDF_PATH);
         FileOutputStream os = new FileOutputStream(new File(PDF_SIGNED));
+        //签署需要提供一个临时的目录
         PdfStamper stamper =
-                PdfStamper.createSignature(reader, os, '\0', new File("/Users/huluwa/Desktop"), true);
+                PdfStamper.createSignature(reader, os, '\0', new File("/tmp/pdf"), true);
         // Creating the appearance
         PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
         appearance.setReason("签署理由");
