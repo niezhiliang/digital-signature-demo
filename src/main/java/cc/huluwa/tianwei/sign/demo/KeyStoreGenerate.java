@@ -53,6 +53,7 @@ public class KeyStoreGenerate {
 
     public static void main(String[] args) throws Exception {
         //生成keystore容器并生成一张证书
+        // 到keystore目录下面输入 keytool -list -v -keystore demo.ks 输入密码就可以看到keystore里面所有的证书
         //generateKeyStore();
 
         //安装第二张证书
