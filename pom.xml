@@ -47,14 +47,4 @@
             <version>1.54</version>
         </dependency>
     </dependencies>
-
-
-    <repositories>
-        <repository>
-            <id>liumapp</id>
-            <url>http://118.190.204.17:8081/repository/liumapp/</url>
-        </repository>
-    </repositories>
-
-
 </project>
