@@ -2,22 +2,18 @@ package cc.huluwa.tianwei.sign.demo;
 
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfSignatureAppearance;
-import com.itextpdf.text.pdf.PdfStamper;
+import com.itextpdf.text.pdf.*;
 import com.itextpdf.text.pdf.security.*;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import sun.security.tools.keytool.CertAndKeyGen;
 import sun.security.x509.X500Name;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @Author NieZhiLiang
@@ -45,6 +41,9 @@ public class KeyStoreGenerate {
     /** 签章图片 **/
     private static String SIGN_IMG = "./data/test.png";
 
+    /** 带有数字签名和时间戳的pdf **/
+    private static String CHK_PDF = "./data/chk.pdf";
+
     //这里是防止报下面这个异常 java.security.NoSuchProviderException: no such provider: BC
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -60,7 +59,10 @@ public class KeyStoreGenerate {
         //installSencondCert();
 
         //pdf证书签署
-        signPdf("123456");
+        //signPdf("123456");
+
+        //验签
+        yanqian();
     }
 
     /**
@@ -170,12 +172,11 @@ public class KeyStoreGenerate {
      * @throws GeneralSecurityException
      */
     public static void yanqian() throws IOException, GeneralSecurityException {
+//        //添加BC库支持
+//        BouncyCastleProvider provider = new BouncyCastleProvider();
+//        Security.addProvider(provider);
 
-        //添加BC库支持
-        BouncyCastleProvider provider = new BouncyCastleProvider();
-        Security.addProvider(provider);
-
-        PdfReader pdfReader = new PdfReader(new ClassPathResource("test.pdf").getPath());
+        PdfReader pdfReader = new PdfReader(CHK_PDF);
         AcroFields acroFields = pdfReader.getAcroFields();
         List<String> names = acroFields.getSignatureNames();
 
