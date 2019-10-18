@@ -164,4 +164,40 @@ public class KeyStoreGenerate {
                 null, null, null, 0, subfilter);
 
     }
+    /**
+     * 验证pdf证书信息
+     * @throws IOException
+     * @throws GeneralSecurityException
+     */
+    public static void yanqian() throws IOException, GeneralSecurityException {
+
+        //添加BC库支持
+        BouncyCastleProvider provider = new BouncyCastleProvider();
+        Security.addProvider(provider);
+
+        PdfReader pdfReader = new PdfReader(new ClassPathResource("test.pdf").getPath());
+        AcroFields acroFields = pdfReader.getAcroFields();
+        List<String> names = acroFields.getSignatureNames();
+
+        for (String name : names) {
+            PdfDictionary signatureDict = acroFields.getSignatureDictionary(name);
+            //时间戳
+            String timestrap = signatureDict.getAsString(PdfName.M).toString().replace("D:","").substring(0,12);
+
+            PdfPKCS7 pdfPKCS7 = acroFields.verifySignature(name);
+
+            X509Certificate x509Certificate = pdfPKCS7.getSigningCertificate();
+            Principal principal = x509Certificate.getIssuerDN();
+            //证书颁发机构
+            String s = principal.toString().split("CN")[2].replace("=","");
+            //时间戳有效性
+            boolean flag = pdfPKCS7.verifyTimestampImprint();
+            //签署人姓名
+            String signerName = CertificateInfo.getSubjectFields(pdfPKCS7.getSigningCertificate()).getField("CN");
+            //文档是否被修改
+            boolean isChange = pdfPKCS7.verify();
+
+            System.out.println(signerName + "\t时间戳是否有效:" +flag + "\t" + timestrap + "\t颁发机构:" + s +"\t是否被篡改:"+isChange);
+        }
+    }
 }
