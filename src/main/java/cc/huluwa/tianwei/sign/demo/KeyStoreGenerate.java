@@ -172,9 +172,6 @@ public class KeyStoreGenerate {
      * @throws GeneralSecurityException
      */
     public static void yanqian() throws IOException, GeneralSecurityException {
-//        //添加BC库支持
-//        BouncyCastleProvider provider = new BouncyCastleProvider();
-//        Security.addProvider(provider);
 
         PdfReader pdfReader = new PdfReader(CHK_PDF);
         AcroFields acroFields = pdfReader.getAcroFields();
