@@ -1,5 +1,8 @@
 package cc.huluwa.tianwei.sign.demo;
 
+import cc.huluwa.tianwei.sign.demo.utils.ImageUtils;
+import com.itextpdf.text.BadElementException;
+import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
@@ -9,11 +12,15 @@ import sun.security.tools.keytool.CertAndKeyGen;
 import sun.security.x509.X500Name;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @Author NieZhiLiang
@@ -33,7 +40,7 @@ public class KeyStoreGenerate {
     private static String KEYSTORE_TYPE = "PKCS12";
 
     /** pdf路径 **/
-    private static String PDF_PATH = "./data/test.pdf";
+    private static String PDF_PATH = "./data/chk.pdf";
 
     /** 签署成功pdf路径 **/
     private static String PDF_SIGNED = "./data/success.pdf";
@@ -62,7 +69,11 @@ public class KeyStoreGenerate {
         //signPdf("123456");
 
         //验签
-        yanqian();
+        //yanqian();
+
+        qfz("123456");
+
+
     }
 
     /**
@@ -149,7 +160,8 @@ public class KeyStoreGenerate {
         //签名的位置，是图章相对于pdf页面的位置坐标，原点为pdf页面左下角
         //四个参数的分别是，图章左下角x，图章左下角y，图章右上角x，图章右上角y
         appearance.setVisibleSignature(new Rectangle(50f, 50f , 100f, 100f),
-                 1, System.currentTimeMillis()+"");//fileName: 随机作用域
+                 1, System.currentTimeMillis()+"");
+        //fileName: 随机作用域
 
         //签署图片地址
         Image image = Image.getInstance(SIGN_IMG);
@@ -197,5 +209,79 @@ public class KeyStoreGenerate {
 
             System.out.println(signerName + "\t时间戳是否有效:" +flag + "\t" + timestrap + "\t颁发机构:" + s +"\t是否被篡改:"+isChange);
         }
+    }
+
+    /**
+     * 骑缝章签署
+     * @param alias
+     * @throws IOException
+     * @throws DocumentException
+     * @throws GeneralSecurityException
+     */
+    public static void qfz(String alias) throws IOException, DocumentException, GeneralSecurityException {
+        //选择需要印章的pdf
+        PdfReader reader = new PdfReader(PDF_PATH);
+        //获得第一页
+        Rectangle pageSize = reader.getPageSize(1);
+        float height = pageSize.getHeight();
+        float width = pageSize.getWidth();
+        //pdf页数
+        int nums = reader.getNumberOfPages();
+        //生成骑缝章切割图片
+        Image[] images = ImageUtils.subImages(SIGN_IMG, nums);
+
+        InputStream inputStream = new FileInputStream(KEYSTORE_PATH);
+        KeyStore keyStore = KeyStore.getInstance(KEYSTORE_TYPE);
+        keyStore.load(inputStream,KEYSTORE_PASSWORD.toCharArray());
+        //证书的私钥
+        PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, KEYSTORE_PASSWORD.toCharArray());
+        //证书链
+        Certificate[] chain = keyStore.getCertificateChain(alias);
+
+        String digestAlgorithm = DigestAlgorithms.SHA256;
+        MakeSignature.CryptoStandard subfilter = MakeSignature.CryptoStandard.CMS;
+
+        ExternalSignature pks = new PrivateKeySignature(privateKey, digestAlgorithm, "BC");
+        //摘要算法
+        ExternalDigest digest = new BouncyCastleDigest();
+
+        String path = PDF_PATH;
+        // Creating the signature   签名算法
+        int i= 1;
+        for(Image image : images) {
+
+            //选择需要印章的pdf
+            reader = new PdfReader(path);
+            path = "./data/"+new Random().nextInt(1000)+".pdf";
+
+            FileOutputStream os = new FileOutputStream(new File(path));
+            //签署需要提供一个临时的目录
+            PdfStamper stamper =
+                    PdfStamper.createSignature(reader, os, '\0', new File(PDF_SIGNED), true);
+            // Creating the appearance
+            PdfSignatureAppearance appearance = stamper.getSignatureAppearance();
+
+            appearance.setReason("签署理由");
+            appearance.setLocation("签署位置");
+
+            appearance.setCertificationLevel(PdfSignatureAppearance.NOT_CERTIFIED);
+            //设置图章的显示方式，如下选择的是只显示图章（还有其他的模式，可以图章和签名描述一同显示）
+            appearance.setRenderingMode(PdfSignatureAppearance.RenderingMode.GRAPHIC);
+            //设置签名的位置，页码，签名域名称，多次追加签名的时候，签名域名称不能一样
+            //签名的位置，是图章相对于pdf页面的位置坐标，原点为pdf页面左下角
+            //四个参数的分别是，图章左下角x，图章左下角y，图章右上角x，图章右上角y
+            appearance.setVisibleSignature(new Rectangle(width-20, height/2 , width, height/2 + 60),
+                    i, System.currentTimeMillis()+"");
+            //fileName: 随机作用域
+
+            //签署图片地址
+            appearance.setSignatureGraphic(image);
+            // 调用itext签名方法完成pdf签章
+            MakeSignature.signDetached(appearance, digest, pks, chain,
+                    null, null, null, 0, subfilter);
+            i++;
+            Files.copy(Paths.get(path),new FileOutputStream (new File (PDF_SIGNED)));
+        }
+
     }
 }
