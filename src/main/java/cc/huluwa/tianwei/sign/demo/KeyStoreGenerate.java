@@ -1,12 +1,12 @@
 package cc.huluwa.tianwei.sign.demo;
 
 import cc.huluwa.tianwei.sign.demo.utils.ImageUtils;
-import com.itextpdf.text.BadElementException;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import com.itextpdf.text.pdf.security.*;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import sun.security.tools.keytool.CertAndKeyGen;
 import sun.security.x509.X500Name;
@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.List;
@@ -40,7 +39,7 @@ public class KeyStoreGenerate {
     private static String KEYSTORE_TYPE = "PKCS12";
 
     /** pdf路径 **/
-    private static String PDF_PATH = "./data/chk.pdf";
+    private static String PDF_PATH = "./data/test.pdf";
 
     /** 签署成功pdf路径 **/
     private static String PDF_SIGNED = "./data/success.pdf";
@@ -60,7 +59,7 @@ public class KeyStoreGenerate {
     public static void main(String[] args) throws Exception {
         //生成keystore容器并生成一张证书
         // 到keystore目录下面输入 keytool -list -v -keystore demo.ks 输入密码就可以看到keystore里面所有的证书
-        //generateKeyStore();
+        generateKeyStore();
 
         //安装第二张证书
         //installSencondCert();
@@ -71,7 +70,8 @@ public class KeyStoreGenerate {
         //验签
         //yanqian();
 
-        qfz("123456");
+        //骑缝章
+        //qfz("123456");
 
 
     }
@@ -175,8 +175,7 @@ public class KeyStoreGenerate {
         ExternalDigest digest = new BouncyCastleDigest();
         // 调用itext签名方法完成pdf签章
         MakeSignature.signDetached(appearance, digest, pks, chain,
-                null, null, null, 0, subfilter);
-
+                null, null, new TSAClientBouncyCastle("http://ets.wotrus.com/tk_3_"+ DigestUtils.sha1Hex("2019112707_密钥")), 0, subfilter);
     }
     /**
      * 验证pdf证书信息
